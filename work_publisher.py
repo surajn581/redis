@@ -11,7 +11,7 @@ console = logging.StreamHandler()
 logger.addHandler(console)
 
 def create_work_item():
-    return BlockWorkItem('SampleBlockWorkItem')
+    return BlockWorkItem()
 
 class WorkPublisherBase(ABC):
     '''base class for work publisher'''

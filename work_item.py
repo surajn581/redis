@@ -8,6 +8,7 @@ import random
 import time
 import json
 import sys
+import uuid
 
 logger = logging.getLogger('WorkItem')
 logger.setLevel(logging.DEBUG)
@@ -42,6 +43,7 @@ class BlockWorkItem(WorkItemBase):
     ''' work item that blocks the worker for a set amount of time '''
 
     def __init__(self, name = None, time = None):
+        name = name or ( '{}-{}'.format( self.__class__.__name__, uuid.uuid4().hex ) )
         super().__init__(name)
         self.time = time or random.randint(0, 5)
 
@@ -50,6 +52,10 @@ class BlockWorkItem(WorkItemBase):
     
     def payload(self):
         return dict(name = self.name, time = self.time)
+    
+    @staticmethod
+    def from_json(payload):
+        return WorkItemFactory.init_from_json(payload)
 
     def execute(self, *args, **kwargs):
         if random.randint(1, 10) == 1:
@@ -69,7 +75,8 @@ class WorkItemFactory:
     def init_from_json(payload:str):
         payload = json.loads(payload)
         cls_name = payload.pop('cls_name')
-        return WorkItemFactory._get_implementation(cls_name)(payload)
+        impl = WorkItemFactory._get_implementation(cls_name)
+        return impl(**payload)
     
     def covert_to_json(work_item:WorkItemBase):
         payload = work_item.payload()
