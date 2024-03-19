@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from conn import RedisConn as conn
 from work_item import BlockWorkItem, WorkItemBase
 import logging
+import time
+import random
 logger = logging.getLogger('WorkPublisher')
 logger.setLevel(logging.DEBUG)
 console = logging.StreamHandler()
@@ -48,7 +50,9 @@ class WorkPublisher(WorkPublisherBase):
 
 def main():
     publisher = WorkPublisher()
-    publisher.publish()
+    while True:
+        publisher.publish()
+        time.sleep(random.randint(100, 120))
 
 if __name__ == '__main__':
     main()
