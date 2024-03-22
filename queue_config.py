@@ -1,7 +1,8 @@
 '''
 file that holds the basic config for redis queue
 '''
+import os
 
-HOST = '172.18.0.2'
-PORT = 6379
+HOST = os.environ.get('REDIS_SERVICE_HOST', 'localhost' )
+PORT = os.environ.get('REDIS_SERVICE_PORT', 6379 )
 DB = 0
