@@ -5,6 +5,8 @@ file that defines the worker that polls and excutes the work
 import logging
 import time
 import uuid
+import os
+from utils import Timer
 from abc import ABC, abstractmethod
 from work_item import WorkItemFactory, WorkItemBase
 from work_publisher import WorkPublisherBase
@@ -40,6 +42,7 @@ class WorkerBase(ABC):
     def execute(self, work:WorkItemBase, *args, **kwargs):
         logger.info('executing work: %s with args: %s and kwargs: %s', work, args, kwargs)
         res = work.execute(*args, **kwargs)
+        return res
 
     @abstractmethod
     def handle_result(self, result, *args, **kwargs):
@@ -68,7 +71,7 @@ class Worker(WorkerBase):
 
     def __init__(self, publisher:WorkPublisherBase):
         super().__init__(publisher)
-        self.name = self.__class__.__name__ + uuid.uuid4().hex
+        self.name = os.environ.get('HOSTNAME', self.__class__.__name__ + uuid.uuid4().hex)
 
     def get_work(self):
         work = super().get_work()        
@@ -77,8 +80,14 @@ class Worker(WorkerBase):
             return work
         time.sleep(1)
 
+    def execute(self, work: WorkItemBase, *args, **kwargs):
+        with Timer(f'executing work: {work}') as timer:
+            res = super().execute(work, *args, **kwargs)
+        return res
+
     def handle_result(self, result, *args, **kwargs):
         logger.info('handling result: %s', result)
+        self.conn.lpush(f'{self.name}:processed', result)
 
     def handle_failure(self, work):
         self.conn.lpush(f'{self.name}:failure', work.json())
