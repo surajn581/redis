@@ -5,7 +5,7 @@ metadata:
   labels:
     app: work-publisher
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: work-publisher
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: work-publisher
-        image: surajn581/work_publisher:1.01
+        image: surajn581/work_publisher:1.04
         resources:
           requests:
             memory: "64Mi"
