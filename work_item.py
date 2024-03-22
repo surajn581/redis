@@ -62,7 +62,7 @@ class BlockWorkItem(WorkItemBase):
             raise Exception('raising exception to mimic failures')
         logger.info('sleeping for %s seconds', self.time)
         time.sleep(self.time)
-        return True
+        return self.name
 
 class WorkItemFactory:
 
