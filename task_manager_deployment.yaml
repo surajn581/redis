@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: task-manager
-        image: surajn581/task_manager:1.00
+        image: surajn581/task_manager:1.01
         resources:
           requests:
             memory: "64Mi"

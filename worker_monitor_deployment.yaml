@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: worker-monitor
-        image: surajn581/worker_monitor:1.00
+        image: surajn581/worker_monitor:1.01
         resources:
           requests:
             memory: "64Mi"
