@@ -1,19 +1,13 @@
 '''
 definition of work item class
 '''
-
-from abc import ABC, abstractmethod
-import logging
 import random
 import time
 import json
 import sys
 import uuid
-
-logger = logging.getLogger('WorkItem')
-logger.setLevel(logging.DEBUG)
-console = logging.StreamHandler()
-logger.addHandler(console)
+from abc import ABC, abstractmethod
+from utils import logger
 
 class WorkItemBase(ABC):
     '''base class to define a work item'''

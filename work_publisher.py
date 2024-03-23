@@ -1,16 +1,12 @@
 '''
 file that creates and publishes work to the redis queue
 '''
+import time
+import random
 from abc import ABC, abstractmethod
 from conn import RedisConn as conn
 from work_item import BlockWorkItem, WorkItemBase
-import logging
-import time
-import random
-logger = logging.getLogger('WorkPublisher')
-logger.setLevel(logging.DEBUG)
-console = logging.StreamHandler()
-logger.addHandler(console)
+from utils import logger
 
 def create_work_item():
     return BlockWorkItem()
