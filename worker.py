@@ -2,22 +2,20 @@
 file that defines the worker that polls and excutes the work
 '''
 
-import logging
 import time
 import uuid
 import os
+from datetime import datetime
 from utils import Timer
 from abc import ABC, abstractmethod
 from work_item import WorkItemFactory, WorkItemBase
 from work_publisher import WorkPublisherBase
-logger = logging.getLogger('Worker')
-logger.setLevel(logging.DEBUG)
-console = logging.StreamHandler()
-logger.addHandler(console)
+from utils import logger
 
 class WorkerBase(ABC):
     def __init__(self, publisher: WorkPublisherBase):
         self.publisher = publisher
+        self.name = os.environ.get('HOSTNAME', self.__class__.__name__ + uuid.uuid4().hex)
 
     @property
     def conn(self):
@@ -26,6 +24,9 @@ class WorkerBase(ABC):
     @property
     def queue(self):
         return self.publisher.name
+    
+    def send_heartbeat(self):
+        self.conn.hset('heartbeats', self.name, datetime.now().timestamp())
 
     def dequeue(self):
         return self.conn.brpop(self.queue)[1]
@@ -45,7 +46,7 @@ class WorkerBase(ABC):
         return res
 
     @abstractmethod
-    def handle_result(self, result, *args, **kwargs):
+    def handle_result(self, work, result, *args, **kwargs):
         raise NotImplementedError('subclass needs to implement this method')
     
     def handle_failure(self, work):
@@ -58,10 +59,11 @@ class WorkerBase(ABC):
             return
         try:
             res = self.execute(work)
-            self.handle_result(res)
+            self.handle_result(work, res)
         except Exception as ex:
             logger.error(f'failed to execute work: {work} due to: {ex}')
             self.handle_failure(work)
+        self.send_heartbeat()
 
     def run(self):
         while True:
@@ -70,13 +72,12 @@ class WorkerBase(ABC):
 class Worker(WorkerBase):
 
     def __init__(self, publisher:WorkPublisherBase):
-        super().__init__(publisher)
-        self.name = os.environ.get('HOSTNAME', self.__class__.__name__ + uuid.uuid4().hex)
+        super().__init__(publisher)        
 
     def get_work(self):
         work = super().get_work()        
         if work:
-            self.conn.lpush(self.name, work.json())
+            self.conn.sadd(self.name, work.json())
             return work
         time.sleep(1)
 
@@ -85,9 +86,10 @@ class Worker(WorkerBase):
             res = super().execute(work, *args, **kwargs)
         return res
 
-    def handle_result(self, result, *args, **kwargs):
+    def handle_result(self, work, result, *args, **kwargs):
         logger.info('handling result: %s', result)
         self.conn.lpush(f'{self.name}:processed', result)
+        self.conn.srem(self.name, work.json())
 
     def handle_failure(self, work):
         self.conn.lpush(f'{self.name}:failure', work.json())
