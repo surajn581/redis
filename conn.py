@@ -2,14 +2,9 @@
 file that has the redis client connection object
 '''
 import redis
-import logging
 import time
+from utils import logger
 from queue_config import HOST, PORT, DB
-
-logger = logging.getLogger('Worker')
-logger.setLevel(logging.DEBUG)
-console = logging.StreamHandler()
-logger.addHandler(console)
 
 def retry(ntry=6):
     def _retry(f):
