@@ -1,12 +1,18 @@
 import time
 import logging
+formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-4s %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+console = logging.StreamHandler()
+console.setFormatter(formatter)
+logger.addHandler(console)
+logger.warn = logger.warning
 
 class Timer:
 
     def __init__(self, msg = ''):
         self.msg = msg
-        self.logger = logging.getLogger()
-        self.logger.setLevel(logging.INFO)
         self._elapsed = None
 
     @property
@@ -21,4 +27,4 @@ class Timer:
     def __exit__(self, *args, **kwargs):
         end = time.time()
         self._elapsed = end - self.start_time
-        self.logger.info('%s took %s seconds', self.msg, self.elapsed)
+        logger.info('%s took %s seconds', self.msg, self.elapsed)
