@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: work-publisher
-        image: surajn581/work_publisher:1.04
+        image: surajn581/work_publisher:1.05
         resources:
           requests:
             memory: "64Mi"
