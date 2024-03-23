@@ -16,15 +16,26 @@ class TaskManager:
             self.conn.lpush(self.queue, work)
             logger.info(f'work: {work} republished')
 
-    def republish_work(self):
-        dead_workers = self.conn.smembers('dead_workers')
+    def _get_dead_workers(self):
+        return self.conn.smembers('dead_workers')
+
+    def _manage(self):
+        dead_workers = self._get_dead_workers()
         logger.info(f'found {len(dead_workers)} dead workers: {dead_workers}')
         for worker in dead_workers:
             self._republish_work(worker)
 
+        # writing a 2nd for loop instead of doing the cleanup in the above for loop so that
+        # the work is resubmitted as soon as possible and only then the clean up begins
+        for worker in dead_workers:
+            self._cleanup_dead_worker_artifacts(worker)
+
+    def _cleanup_dead_worker_artifacts(self, worker):
+        self.conn.srem('dead_workers', worker)
+
     def manage(self):
         while True:            
-            self.republish_work()
+            self._manage()
             time.sleep(120)
 
 def main():
