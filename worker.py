@@ -94,10 +94,22 @@ class Worker(WorkerBase):
     def handle_failure(self, work):
         self.conn.lpush(f'{self.name}:failure', work.json())
         return super().handle_failure(work)
+    
+class URLWorker(Worker):
+
+    def handle_failure(self, work):
+        failure_hash_map = f'{self.name}:failure_counts'
+        try_count = self.conn.hget(failure_hash_map, work.name)
+        if try_count and int( try_count ) > 5:
+            logger.warn(f'work: {work} has been tried: {try_count} times, it will not be processed again')
+            return
+        self.conn.hincrby(failure_hash_map, work.name, 1)
+        self.conn.sadd(f'{self.name}:failure', work.json())
+        self.publisher.publish_work(work)
 
 def main():
-    from work_publisher import WorkPublisher
-    worker = Worker(publisher=WorkPublisher())
+    from work_publisher import URLWorkPublisher
+    worker = URLWorker(publisher=URLWorkPublisher())
     worker.run()
 
 if __name__ == '__main__':

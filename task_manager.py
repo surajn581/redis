@@ -39,8 +39,8 @@ class TaskManager:
             time.sleep(120)
 
 def main():
-    from work_publisher import WorkPublisher
-    manager = TaskManager(publisher=WorkPublisher())
+    from work_publisher import URLWorkPublisher
+    manager = TaskManager(publisher=URLWorkPublisher())
     manager.manage()
 
 if __name__ == '__main__':
