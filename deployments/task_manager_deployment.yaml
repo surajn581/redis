@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: worker
+  name: task-manager
   labels:
-    app: worker
+    app: task-manager
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: worker
+      app: task-manager
   template:
     metadata:
       labels:
-        app: worker
+        app: task-manager
     spec:
       containers:
-      - name: worker
-        image: surajn581/worker:1.05
+      - name: task-manager
+        image: surajn581/task_manager:latest
         resources:
           requests:
             memory: "64Mi"

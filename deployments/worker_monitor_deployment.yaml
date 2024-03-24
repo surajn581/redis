@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: work-publisher
+  name: worker-monitor
   labels:
-    app: work-publisher
+    app: worker-monitor
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: work-publisher
+      app: worker-monitor
   template:
     metadata:
       labels:
-        app: work-publisher
+        app: worker-monitor
     spec:
       containers:
-      - name: work-publisher
-        image: surajn581/work_publisher:1.05
+      - name: worker-monitor
+        image: surajn581/worker_monitor:latest
         resources:
           requests:
             memory: "64Mi"
