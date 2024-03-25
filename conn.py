@@ -22,7 +22,7 @@ def retry(ntry=6):
         return call
     return _retry
 
-RedisConn = redis.Redis(host=HOST, port=PORT, db=DB)
+RedisConn = redis.Redis(host=HOST, port=PORT, db=DB, decode_responses=True)
 
 @retry(ntry=7)
 def main():
