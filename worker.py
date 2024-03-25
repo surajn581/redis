@@ -1,10 +1,11 @@
 '''
 file that defines the worker that polls and excutes the work
 '''
-
+import traceback
 import time
 import uuid
 import os
+import json
 from datetime import datetime
 from utils import Timer
 from abc import ABC, abstractmethod
@@ -33,9 +34,6 @@ class WorkerBase(ABC):
     
     def get_work(self):
         payload = self.dequeue()
-        if not payload:
-            logger.info('queue: %s is empty', self.queue)
-            return
         work = WorkItemFactory.init_from_json(payload)
         logger.info('got work: %s from queue: %s', work, self.queue)
         return work
@@ -54,16 +52,15 @@ class WorkerBase(ABC):
         self.publisher.publish_work(work)
     
     def _run(self):
+        self.send_heartbeat()
         work = self.get_work()
-        if not work:
-            return
         try:
             res = self.execute(work)
             self.handle_result(work, res)
         except Exception as ex:
             logger.error(f'failed to execute work: {work} due to: {ex}')
+            logger.error(f'traceback: {traceback.format_exc()}')
             self.handle_failure(work)
-        self.send_heartbeat()
 
     def run(self):
         while True:
@@ -75,7 +72,7 @@ class Worker(WorkerBase):
         super().__init__(publisher)        
 
     def get_work(self):
-        work = super().get_work()        
+        work = super().get_work()
         if work:
             self.conn.sadd(self.name, work.json())
             return work
@@ -83,33 +80,36 @@ class Worker(WorkerBase):
 
     def execute(self, work: WorkItemBase, *args, **kwargs):
         with Timer(f'executing work: {work}') as timer:
-            res = super().execute(work, *args, **kwargs)
-        return res
+            return super().execute(work, *args, **kwargs)
+        
+    @property
+    def result_queue_name(self):
+        return f'{self.name}:processed'
+    
+    @property
+    def result_queue_name(self):
+        return f'{self.name}:processed'
+    
+    @property
+    def failure_counts_map_name(self):
+        return f'{self.name}:failure_counts'
 
     def handle_result(self, work, result, *args, **kwargs):
         logger.info('handling result: %s', result)
-        self.conn.lpush(f'{self.name}:processed', result)
+        self.conn.sadd(self.result_queue_name, work.json())
         self.conn.srem(self.name, work.json())
 
     def handle_failure(self, work):
-        self.conn.lpush(f'{self.name}:failure', work.json())
-        return super().handle_failure(work)
-    
-class URLWorker(Worker):
-
-    def handle_failure(self, work):
-        failure_hash_map = f'{self.name}:failure_counts'
-        try_count = self.conn.hget(failure_hash_map, work.name)
-        if try_count and int( try_count ) > 5:
-            logger.warn(f'work: {work} has been tried: {try_count} times, it will not be processed again')
+        try_count = self.conn.hget(self.failure_counts_map_name, work.name)
+        if try_count and int( try_count ) >= 5:
+            logger.warn(f'work: {work} has been tried: {int(try_count)} times, it will not be processed again')
             return
-        self.conn.hincrby(failure_hash_map, work.name, 1)
-        self.conn.sadd(f'{self.name}:failure', work.json())
-        self.publisher.publish_work(work)
+        self.conn.hincrby(self.failure_counts_map_name, work.name, 1)
+        return super().handle_failure(work)
 
 def main():
-    from work_publisher import URLWorkPublisher
-    worker = URLWorker(publisher=URLWorkPublisher())
+    from work_publisher import WorkPublisher
+    worker = Worker(publisher=WorkPublisher())
     worker.run()
 
 if __name__ == '__main__':
