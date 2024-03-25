@@ -16,7 +16,7 @@ class WorkerMonitor:
 
     def monitor(self):
         while True:
-            if not self.conn.hlen(QueueEnums.HEART_BEATS):
+            if not self.conn.hlen(QueueEnums.HEARTBEATS):
                 continue
             self._monitor()
             time.sleep(int(self.liveness_threshold/2))
@@ -27,7 +27,7 @@ class WorkerMonitor:
     def _handle_dead_worker(self, worker):
         self.declare_dead_worker(worker)
         logger.info(f'removing worker: {worker} hearbeat')
-        self.conn.hdel(QueueEnums.HEART_BEATS, worker)
+        self.conn.hdel(QueueEnums.HEARTBEATS, worker)
 
     def is_worker_live(self, worker, timestamp):
         delta = datetime.now().timestamp() - float(timestamp)
@@ -40,7 +40,7 @@ class WorkerMonitor:
         return False
     
     def _monitor(self):
-        heartbeats = self.conn.hgetall(QueueEnums.HEART_BEATS)
+        heartbeats = self.conn.hgetall(QueueEnums.HEARTBEATS)
         for worker, timestamp in heartbeats.items():
             if self.conn.sismember(QueueEnums.DEAD_WORKERS, worker):
                 logger.info(f'worker: {worker} is alive again...removing it from set: {QueueEnums.DEAD_WORKERS}')

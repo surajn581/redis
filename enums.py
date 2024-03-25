@@ -16,11 +16,8 @@ class WorkerMonitorEnums:
     LIVENESS_THRESHOLD = 'LIVENESS_THRESHOLD'
 
 class QueueEnums:
-    HEART_BEATS = 'hearbeats'
+    HEARTBEATS = 'heartbeats'
     PROCESSED = 'processed'
     FAILURE_COUNTS_MAP = 'failure_counts_map'
     PENDING = 'pending'
     DEAD_WORKERS = 'deadworkers'
-
-
-

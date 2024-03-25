@@ -28,7 +28,7 @@ class WorkerBase(ABC):
         return self.publisher.name
     
     def send_heartbeat(self):
-        self.conn.hset(QueueEnums.HEART_BEATS, self.name, datetime.now().timestamp())
+        self.conn.hset(QueueEnums.HEARTBEATS, self.name, datetime.now().timestamp())
 
     def dequeue(self):
         return self.conn.bzpopmax(self.task_queue)[1]
