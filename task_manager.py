@@ -21,26 +21,20 @@ class TaskManager:
 
     def _manage(self):
         dead_workers = self._get_dead_workers()
-        logger.info(f'found {len(dead_workers)} dead workers: {dead_workers}')
+        logger.info(f'dead worker count is: {len(dead_workers)}')
         for worker in dead_workers:
+            if not self.conn.scard(worker):
+                continue
             self._republish_work(worker)
-
-        # writing a 2nd for loop instead of doing the cleanup in the above for loop so that
-        # the work is resubmitted as soon as possible and only then the clean up begins
-        for worker in dead_workers:
-            self._cleanup_dead_worker_artifacts(worker)
-
-    def _cleanup_dead_worker_artifacts(self, worker):
-        self.conn.srem('dead_workers', worker)
 
     def manage(self):
         while True:            
             self._manage()
-            time.sleep(120)
+            time.sleep(15)
 
 def main():
-    from work_publisher import URLWorkPublisher
-    manager = TaskManager(publisher=URLWorkPublisher())
+    from work_publisher import WorkPublisher
+    manager = TaskManager(publisher=WorkPublisher())
     manager.manage()
 
 if __name__ == '__main__':
