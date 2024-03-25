@@ -108,8 +108,8 @@ class Worker(WorkerBase):
         return super().handle_failure(work)
 
 def main():
-    from work_publisher import WorkPublisher
-    worker = Worker(publisher=WorkPublisher())
+    from work_publisher import URLWorkPublisher
+    worker = Worker(publisher=URLWorkPublisher())
     worker.run()
 
 if __name__ == '__main__':
