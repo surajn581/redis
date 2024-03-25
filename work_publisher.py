@@ -2,7 +2,7 @@
 file that creates and publishes work to the redis queue
 '''
 import time
-import random
+import traceback
 from abc import ABC, abstractmethod
 from conn import RedisConn as conn
 from work_item import BlockWorkItem, WorkItemBase, URLWorkItem
@@ -44,8 +44,10 @@ class WorkPublisher(WorkPublisherBase):
         self.enqueue(work.json())
 
     def publish(self):
-        for work_item in self.work_items():
-            self.publish_work(work_item)
+        while True:
+            for work_item in self.work_items():
+                self.publish_work(work_item)
+            time.sleep(120)
 
 class URLWorkPublisher(WorkPublisher):
 
@@ -68,23 +70,28 @@ class URLWorkPublisher(WorkPublisher):
     
     def create_work_item( self, url, name ):
         return URLWorkItem( url = url, name = name )
+    
+    @property
+    def visited_set_name(self):
+        return f'{self.__class__.__name__}:visited'
 
     def _publish_work_items(self, url):
         stack = [url]
-        visited_set_name = f'{self.__class__.__name__}:visited'
-        while stack and int( self.conn.scard(visited_set_name) )<1024:
+        while stack and int( self.conn.scard(self.visited_set_name) )<1024:
             url = stack.pop()
             name = self.hash_url(url)
-            if  self.conn.sismember( visited_set_name, name ):
+            if  self.conn.sismember( self.visited_set_name, name ):
+                logger.info(f'{name} exists in {self.visited_set_name}, skipping')
                 continue
             try:
                 child_urls = self.find_child(url)
             except Exception as ex:
                 child_urls = []
                 logger.error(f'could not find children for: {url} due to: {ex}')
+                logger.error(f'traceback: {traceback.format_exc()}')
                 continue
             self.publish_work( self.create_work_item( url, name ) ) 
-            self.conn.sadd( visited_set_name, name )
+            self.conn.sadd( self.visited_set_name, name )
             stack.extend(child_urls)
 
     def get_seed_url(self):
@@ -98,7 +105,7 @@ class URLWorkPublisher(WorkPublisher):
         self._publish_work_items(url)
 
 def main():
-    publisher = URLWorkPublisher()
+    publisher = WorkPublisher()
     publisher.publish()
 
 if __name__ == '__main__':
