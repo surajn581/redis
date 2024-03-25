@@ -17,7 +17,7 @@ class Timer:
 
     @property
     def elapsed(self):
-        if self._elapsed:
+        if self._elapsed is not None:
             return self._elapsed
         raise ValueError('elapsed time not found')
 
