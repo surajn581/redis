@@ -34,21 +34,22 @@ class WorkerMonitor:
         if delta < self.liveness_threshold:
             return True
         logger.info(f'worker: {worker} has timestamp older than {self.liveness_threshold} seconds')
-        logger.info(f'pending_queue name: {worker}:{QueueEnums.PENDING}')
-        if not self.conn.scard(f'{worker}:{QueueEnums.PENDING}'):
+        if not self.conn.scard(f'{worker}:{QueueEnums.PENDING}') and delta < self.liveness_threshold*10:
             logger.info(f'worker: {worker} does not have any pending work items, it may not be dead')
-            return True if delta <= self.liveness_threshold*10 else False
-        logger.info(f'worker: {worker} is dead with last timestamp: {timestamp}')
+            return True        
         return False
     
     def _monitor(self):
         heartbeats = self.conn.hgetall(QueueEnums.HEART_BEATS)
         for worker, timestamp in heartbeats.items():
             if self.conn.sismember(QueueEnums.DEAD_WORKERS, worker):
+                logger.info(f'worker: {worker} is alive again...removing it from set: {QueueEnums.DEAD_WORKERS}')
+                self.conn.srem(QueueEnums.DEAD_WORKERS, worker)
                 continue
             if self.is_worker_live(worker, timestamp):
                 logger.info(f'worker: {worker} is live')
-                continue            
+                continue     
+            logger.info(f'worker: {worker} is dead with last timestamp: {timestamp}')       
             self._handle_dead_worker(worker)
 
 def main():
