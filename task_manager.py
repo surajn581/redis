@@ -1,29 +1,33 @@
+import time
 from work_publisher import WorkPublisherBase
 from utils import logger
-import time
+from enums import QueueEnums
 
 class TaskManager:
 
     def __init__(self, publisher: WorkPublisherBase):
         self.publisher = publisher
         self.conn = publisher.conn
-        self.queue = publisher.name
+        self.task_queue = publisher.name
+
+    def worker_pending_queue(self, worker):
+        return f'{worker}:{QueueEnums.PENDING}'
 
     def _republish_work(self, worker):
-        logger.info(f'republishing work items abandoned by worker: {worker} into queue {self.queue}')
-        while self.conn.scard(worker):
-            work = self.conn.spop(worker)
-            self.conn.lpush(self.queue, work)
+        logger.info(f'republishing work items abandoned by worker: {worker} into queue {self.task_queue}')
+        while self.conn.scard(self.worker_pending_queue(worker)):
+            work = self.conn.spop(self.worker_pending_queue(worker))
+            self.conn.lpush(self.task_queue, work)
             logger.info(f'work: {work} republished')
 
     def _get_dead_workers(self):
-        return self.conn.smembers('dead_workers')
+        return self.conn.smembers(QueueEnums.DEAD_WORKERS)
 
     def _manage(self):
         dead_workers = self._get_dead_workers()
         logger.info(f'dead worker count is: {len(dead_workers)}')
         for worker in dead_workers:
-            if not self.conn.scard(worker):
+            if not self.conn.scard(self.worker_pending_queue(worker)):
                 continue
             self._republish_work(worker)
 
