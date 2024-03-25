@@ -17,7 +17,7 @@ class TaskManager:
         logger.info(f'republishing work items abandoned by worker: {worker} into queue {self.task_queue}')
         while self.conn.scard(self.worker_pending_queue(worker)):
             work = self.conn.spop(self.worker_pending_queue(worker))
-            self.conn.lpush(self.task_queue, work)
+            self.conn.zadd(self.task_queue, {work:0})
             logger.info(f'work: {work} republished')
 
     def _get_dead_workers(self):

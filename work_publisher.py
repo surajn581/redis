@@ -28,7 +28,7 @@ class WorkPublisher(WorkPublisherBase):
         super().__init__(conn = conn, name = name)
 
     def enqueue(self, work:str):
-        self.conn.lpush(self.name, work)
+        self.conn.zadd(self.name, {work: 0})
 
     def work_items(self):
         work_items = [create_work_item() for i in range(30)]

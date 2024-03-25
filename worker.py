@@ -31,7 +31,7 @@ class WorkerBase(ABC):
         self.conn.hset(QueueEnums.HEART_BEATS, self.name, datetime.now().timestamp())
 
     def dequeue(self):
-        return self.conn.brpop(self.task_queue)[1]
+        return self.conn.bzpopmax(self.task_queue)[1]
     
     def get_work(self):
         payload = self.dequeue()
