@@ -14,7 +14,6 @@ class TaskManager:
         return f'{worker}:{QueueEnums.PENDING}'
 
     def _republish_work(self, worker):
-        logger.info(f'republishing work items abandoned by worker: {worker} into queue {self.task_queue}')
         while self.conn.scard(self.worker_pending_queue(worker)):
             work = self.conn.spop(self.worker_pending_queue(worker))
             self.conn.zadd(self.task_queue, {work:0})
@@ -28,7 +27,8 @@ class TaskManager:
         logger.info(f'dead worker count is: {len(dead_workers)}')
         for worker in dead_workers:
             if not self.conn.scard(self.worker_pending_queue(worker)):
-                continue
+                continue            
+            logger.info(f'republishing work items abandoned by worker: {worker} into queue {self.task_queue}')
             self._republish_work(worker)
 
     def manage(self):
