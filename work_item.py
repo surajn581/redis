@@ -6,10 +6,9 @@ import time
 import json
 import sys
 import uuid
-import requests
-from bs4 import BeautifulSoup
 from abc import ABC, abstractmethod
 from utils import logger
+from enums import WorkItemEnums
 
 class WorkItemBase(ABC):
     '''base class to define a work item'''
@@ -50,43 +49,10 @@ class BlockWorkItem(WorkItemBase):
         return dict(name = self.name, time = self.time)
     
     def execute(self, *args, **kwargs):
-        if random.randint(1, 10) == 1:
+        if random.randint(1, 10) <= 3:
             raise Exception('raising exception to mimic failures')
         logger.info('sleeping for %s seconds', self.time)
         time.sleep(self.time)
-        return self.name
-    
-class URLWorkItem(WorkItemBase):
-    ''' work item that read all the text from url and writes them to disk '''
-    def __init__(self, url=None, name=None):
-        super().__init__(name)
-        if not url:
-            raise Exception('url must not be None')
-        self.url = url
-        self.result_dir = '/mnt/data'
-
-    def __repr__(self):
-        return f'{super().__repr__()} with url: {self.url}'
-    
-    def payload(self):
-        return dict(name = self.name, url = self.url)
-    
-    @staticmethod
-    def get_text(url):
-        page = requests.get(url)
-        soup = BeautifulSoup(page.content, "html.parser")
-        r = soup.findAll(string = True)
-        for line in r:
-            line.rstrip()
-        return ''.join(r)
-    
-    @staticmethod
-    def write_to_file(file_name, lines):
-        with open(f'{file_name}.txt', 'w') as f:
-            f.write(lines)
-    
-    def execute(self):
-        self.write_to_file(f'{self.result_dir}/{self.name}', self.get_text(self.url))
         return self.name
 
 class WorkItemFactory:
@@ -99,12 +65,12 @@ class WorkItemFactory:
     @staticmethod
     def init_from_json(payload:str):
         payload = json.loads(payload)
-        cls_name = payload.pop('cls_name')
+        cls_name = payload.pop(WorkItemEnums.CLASS_NAME)
         impl = WorkItemFactory._get_implementation(cls_name)
         return impl(**payload)
     
     def covert_to_json(work_item:WorkItemBase):
         payload = work_item.payload()
         cls = work_item.__class__.__name__
-        payload.update( dict(cls_name = cls) )
+        payload.update( {WorkItemEnums.CLASS_NAME:cls} )
         return json.dumps(payload)
