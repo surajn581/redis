@@ -76,9 +76,9 @@ class URLWorkPublisher(WorkPublisher):
         return f'{self.__class__.__name__}:visited'
 
     def _publish_work_items(self, url):
-        stack = [url]
-        while stack and int( self.conn.scard(self.visited_set_name) )<1024:
-            url = stack.pop()
+        queue = [url]
+        while queue and int( self.conn.scard(self.visited_set_name) )<1024:
+            url = queue.pop(0)
             name = self.hash_url(url)
             if  self.conn.sismember( self.visited_set_name, name ):
                 logger.info(f'{name} exists in {self.visited_set_name}, skipping')
@@ -92,7 +92,7 @@ class URLWorkPublisher(WorkPublisher):
                 continue
             self.publish_work( self.create_work_item( url, name ) ) 
             self.conn.sadd( self.visited_set_name, name )
-            stack.extend(child_urls)
+            queue.extend(child_urls)
 
     def get_seed_url(self):
         with open(self.seed_url_location, 'r') as f:
@@ -105,7 +105,7 @@ class URLWorkPublisher(WorkPublisher):
         self._publish_work_items(url)
 
 def main():
-    publisher = WorkPublisher()
+    publisher = URLWorkPublisher()
     publisher.publish()
 
 if __name__ == '__main__':
