@@ -11,13 +11,13 @@ from abc import ABC, abstractmethod
 from work_item import WorkItemFactory, WorkItemBase
 from work_publisher import WorkPublisherBase
 from utils import logger
-from enums import EnvironVarEnums, QueueEnums
+from enums import QueueEnums, WorkerEnvironVarsEnums
 
 
 class WorkerBase(ABC):
     def __init__(self, publisher: WorkPublisherBase):
         self.publisher = publisher
-        self.name = os.environ.get(EnvironVarEnums.HOST_NAME, self.__class__.__name__ + uuid.uuid4().hex)
+        self.name = os.environ.get(WorkerEnvironVarsEnums.HOST_NAME, self.__class__.__name__ + uuid.uuid4().hex)
 
     @property
     def conn(self):
@@ -70,7 +70,8 @@ class WorkerBase(ABC):
 class Worker(WorkerBase):
 
     def __init__(self, publisher:WorkPublisherBase):
-        super().__init__(publisher)        
+        super().__init__(publisher)
+        self.num_retry_on_failure = int( os.environ.get(WorkerEnvironVarsEnums.FAILURE_NUM_RETRY, 5) )
 
     def get_work(self):
         work = super().get_work()
@@ -102,7 +103,7 @@ class Worker(WorkerBase):
 
     def handle_failure(self, work):
         try_count = self.conn.hget(self.failure_counts_map_name, work.name)
-        if try_count and int( try_count ) >= 5:
+        if try_count and int( try_count ) >= self.num_retry_on_failure:
             logger.warn(f'work: {work} has been tried: {int(try_count)} times, it will not be processed again')
             return
         self.conn.hincrby(self.failure_counts_map_name, work.name, 1)

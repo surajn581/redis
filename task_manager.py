@@ -1,7 +1,8 @@
 import time
+import os
 from work_publisher import WorkPublisherBase
 from utils import logger
-from enums import QueueEnums
+from enums import QueueEnums, TaskManagerEnvironVarsEnums
 
 class TaskManager:
 
@@ -9,6 +10,7 @@ class TaskManager:
         self.publisher = publisher
         self.conn = publisher.conn
         self.task_queue = publisher.name
+        self.sleep_interval = int( os.environ.get(TaskManagerEnvironVarsEnums.SLEEP_INTERVAL, 15) )
 
     def worker_pending_queue(self, worker):
         return f'{worker}:{QueueEnums.PENDING}'

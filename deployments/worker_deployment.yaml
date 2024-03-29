@@ -31,3 +31,6 @@ spec:
         volumeMounts:
           - mountPath: "/mnt/data"
             name: app-storage
+        envFrom:
+          - configMapRef:
+              name: environvars

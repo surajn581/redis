@@ -4,15 +4,14 @@ import time
 from datetime import datetime
 from conn import RedisConn as conn
 from utils import logger
-from enums import EnvironVarEnums, QueueEnums, WorkerMonitorEnums
-
-LIVENESS_THRESHOLD = os.environ.get(WorkerMonitorEnums.LIVENESS_THRESHOLD, 60)
+from enums import QueueEnums, WorkerMonitorEnvironVarsEnums
 
 class WorkerMonitor:
-    def __init__(self, liveness_threshold = LIVENESS_THRESHOLD):
-        self.name = os.environ.get(EnvironVarEnums.HOST_NAME, self.__class__.__name__ + uuid.uuid4().hex)
+    def __init__(self, liveness_threshold = None):
+        self.name = os.environ.get(WorkerMonitorEnvironVarsEnums.HOST_NAME, self.__class__.__name__ + uuid.uuid4().hex)
         self.conn = conn
-        self.liveness_threshold = liveness_threshold
+        self.liveness_threshold = int( os.environ.get(WorkerMonitorEnvironVarsEnums.LIVENESS_THRESHOLD, 60) )
+        self.num_retry_stuck_worker = int( os.environ.get(WorkerMonitorEnvironVarsEnums.NUM_RETRY_STUCK_WORKER, 10) )
 
     def monitor(self):
         while True:

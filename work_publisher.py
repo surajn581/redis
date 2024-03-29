@@ -2,10 +2,12 @@
 file that creates and publishes work to the redis queue
 '''
 import time
+import os
 from abc import ABC, abstractmethod
 from conn import RedisConn as conn
 from work_item import BlockWorkItem, WorkItemBase
 from utils import logger
+from enums import WorkPublisherEnvironVarEnums
 
 def create_work_item():
     return BlockWorkItem()
@@ -26,12 +28,14 @@ class WorkPublisher(WorkPublisherBase):
     
     def __init__(self, name=None):
         super().__init__(conn = conn, name = name)
+        self.num_work_items = int( os.environ.get(WorkPublisherEnvironVarEnums.NUM_WORK_ITEMS, 30) )
+        self.sleep_interval = int( os.environ.get(WorkPublisherEnvironVarEnums.SLEEP_INTERVAL, 120) )
 
     def enqueue(self, work:str):
         self.conn.zadd(self.name, {work: 0})
 
     def work_items(self):
-        work_items = [create_work_item() for i in range(30)]
+        work_items = [create_work_item() for i in range(self.num_work_items)]
         return work_items
 
     def publish_work(self, work:WorkItemBase):
@@ -42,7 +46,7 @@ class WorkPublisher(WorkPublisherBase):
         while True:
             for work_item in self.work_items():
                 self.publish_work(work_item)
-            time.sleep(120)
+            time.sleep(self.sleep_interval)
 
 def main():
     publisher = WorkPublisher()
