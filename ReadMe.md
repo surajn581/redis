@@ -1,8 +1,10 @@
 ### TL;DR
 using redis queue to establish connection between work publisher and worker. Work Publisher publishes work items into redis, Worker picks up (pops) items from the queue
 
-### Architecture Diagram
-![architecture_diagram](https://raw.githubusercontent.com/surajn581/redis/main/architecture.jpg)
+### Architecture Diagrams
+![architecture_diagram](architecture.jpg)
+
+[Class & ER Diagrams](uml_diagram)
 
 ### Work Publisher
 it publishes BlockWorkItem objects to the redis queue named WorkPublisher at the rate of 30 objects per ~100-120 seconds
