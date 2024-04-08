@@ -4,7 +4,7 @@ using redis queue to establish connection between work publisher and worker. Wor
 ### Architecture Diagrams
 ![architecture_diagram](architecture.jpg)
 
-[Class & ER Diagrams](uml_diagram)
+[Class & ER Diagrams](uml_diagram.md)
 
 ### Work Publisher
 it publishes BlockWorkItem objects to the redis queue named WorkPublisher at the rate of 30 objects per ~100-120 seconds
